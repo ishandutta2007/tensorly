@@ -2,7 +2,6 @@ from .. import backend as T
 from ..base import fold, unfold
 from ..tenalg.proximal import soft_thresholding, svd_thresholding
 
-
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
@@ -129,7 +128,7 @@ def robust_pca(
 
         # Evolution of the reconstruction errors
         rec_X.append(T.norm(X - D - E, 2))
-        rec_D.append(T.max(T.tensor([T.norm(low_rank - D, 2) for low_rank in J])))
+        rec_D.append(T.max(T.stack([T.norm(low_rank - D, 2) for low_rank in J])))
 
         # Convergence check
         if iteration > 1:

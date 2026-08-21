@@ -1,4 +1,4 @@
-from ..decomposition import parafac
+from ..decomposition import parafac, robust_pca
 from ..tenalg import multi_mode_dot
 from ..cp_tensor import cp_to_tensor
 from .... import backend as tl
@@ -28,3 +28,16 @@ def test_sparse_parafac():
     _ = parafac(
         tensor, rank=rank, init="random", n_iter_max=1, random_state=random_state
     )
+
+
+def test_sparse_robust_pca():
+    """Test that robust PCA stays sparse throughout its update loop."""
+    tensor = sparse.random((4, 5, 6), density=0.2, random_state=1234)
+    low_rank, sparse_error = robust_pca(tensor, n_iter_max=3, verbose=0)
+
+    assert isinstance(low_rank, sparse.SparseArray)
+    assert isinstance(sparse_error, sparse.SparseArray)
+    assert low_rank.shape == tensor.shape
+    assert sparse_error.shape == tensor.shape
+    assert np.isfinite(low_rank.data).all()
+    assert np.isfinite(sparse_error.data).all()

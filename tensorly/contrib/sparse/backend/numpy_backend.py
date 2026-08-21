@@ -10,7 +10,6 @@ import sparse
 from . import register_sparse_backend
 from ....backend.core import Backend
 
-
 _MIN_SPARSE_VERSION = Version("0.4.1+10.g81eccee")
 if Version(sparse.__version__) < _MIN_SPARSE_VERSION:
     raise ImportError(
@@ -88,6 +87,20 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
 
         return x
 
+    def svd(self, matrix, full_matrices=True):
+        """Compute the singular value decomposition of a sparse matrix.
+
+        A reduced decomposition can be computed from a sparse Gram matrix. A
+        full decomposition necessarily returns dense square singular-vector
+        matrices, so defer to SciPy's dense implementation in that case.
+        """
+        if not is_sparse(matrix) or full_matrices:
+            if is_sparse(matrix):
+                matrix = matrix.todense()
+            return scipy.linalg.svd(matrix, full_matrices=full_matrices)
+
+        return self.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
+
     def partial_svd(self, matrix, n_eigenvecs=None, random_state=None, **kwargs):
         # Check that matrix is... a matrix!
         if matrix.ndim != 2:
@@ -145,8 +158,14 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
                     S, U = scipy.sparse.linalg.eigsh(
                         xxT, k=n_eigenvecs, which="LM", v0=v0
                     )
-                S = np.sqrt(S)
-                V = conj.dot(U / S[None, :])
+                S = np.sqrt(np.clip(S, 0, None))
+                inverse = np.divide(
+                    1,
+                    S,
+                    out=np.zeros_like(S),
+                    where=S > np.finfo(S.dtype).eps,
+                )
+                V = conj.dot(U * inverse[None, :])
             else:
                 xTx = matrix.T.dot(matrix)
                 if is_sparse(xTx):
@@ -158,11 +177,23 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
                     S, V = scipy.sparse.linalg.eigsh(
                         xTx, k=n_eigenvecs, which="LM", v0=v0
                     )
-                S = np.sqrt(S)
-                U = matrix.dot(V / S[None, :])
+                S = np.sqrt(np.clip(S, 0, None))
+                inverse = np.divide(
+                    1,
+                    S,
+                    out=np.zeros_like(S),
+                    where=S > np.finfo(S.dtype).eps,
+                )
+                U = matrix.dot(V * inverse[None, :])
 
             # WARNING: here, V is still the transpose of what it should be
             U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
+            if dim_1 < dim_2:
+                V, R = np.linalg.qr(V)
+                V *= np.where(np.diag(R) >= 0, 1, -1)
+            else:
+                U, R = np.linalg.qr(U)
+                U *= np.where(np.diag(R) >= 0, 1, -1)
         return U, S, V.T.conj()
 
 
