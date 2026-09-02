@@ -4,4 +4,5 @@ rcssmin
 numpydoc
 sphinx-gallery==0.17.0
 matplotlib==3.11.1
+pooch
 tensorly_sphinx_theme

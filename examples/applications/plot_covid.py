@@ -113,7 +113,7 @@ for ii in [0, 1, 2]:
     ax[ii].set_title(data.dims[ii])
     ax[ii].set_aspect("auto")
 
-fig2.colorbar(ScalarMappable(norm=plt.Normalize(-1, 1), cmap="PiYG"))
+fig2.colorbar(ScalarMappable(norm=plt.Normalize(-1, 1), cmap="PiYG"), ax=ax)
 
 ##############################################################################
 # From the results, we can see that serum COVID-19 immunity separates into two distinct signals,
