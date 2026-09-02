@@ -110,14 +110,18 @@ def test_tensor_ring_als_sampled(
         tensor_shape, rank, full=True, random_state=rng, dtype=tl.float64
     )
 
-    # Create callback function for error tracking and run decomposition
+    # Create callback function for error tracking and run decomposition.
+    # `tol` is left at its default (rather than forced to 0) so the algorithm can
+    # stop early once converged: for this problem size the error plateaus after a
+    # handful of iterations, and running the full 100 iterations regardless just
+    # burns time (especially on backends with higher per-iteration dispatch
+    # overhead, e.g. jax/tensorflow) without improving on the achieved accuracy.
     callback = ErrorTracker()
     tr_decomp = tensor_ring_als_sampled(
         tensor=tensor,
         rank=rank,
         n_samples=n_samples,
         n_iter_max=100,
-        tol=0,
         random_state=rng,
         callback=callback,
     )
@@ -193,7 +197,17 @@ def test_tensor_ring_als_sampled_large_decomp(uniform_sampling, randomized_error
 
     # Some decomposition properties
     n_samples = 2000  # Note: The smallest least squares problem has 17160 rows
-    n_iter_max = 100
+    # For seed 1234, convergence to the required 1e-7 accuracy happens by iteration 57
+    # at the latest (across the uniform_sampling/randomized_error combinations below);
+    # 75 keeps a healthy margin above that while still cutting a third of the
+    # iterations off the previous n_iter_max=100, which matters since each iteration
+    # is expensive on backends with high per-op dispatch overhead (e.g. jax/tensorflow).
+    # Note tol-based early stopping is NOT a safe way to cut this further: with
+    # uniform_sampling=True or randomized_error=True, the per-iteration error estimate
+    # is noisy enough that the decrease can spuriously fall below a small tol well
+    # before the decomposition has actually converged, causing early exit at ~2%
+    # relative error instead of the ~1e-15 reached once let run to convergence.
+    n_iter_max = 75
 
     # Generate random tensor which has exact tensor ring decomposition
     tensor = random_tr(
