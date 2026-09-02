@@ -16,13 +16,13 @@ jobs:
             python-version: '3.9'
           - BACKEND: 'numpy'
             python-version: '3.11'
-            TENSORLY_TENALG_BACKEND: ['einsum']
+            TENSORLY_TENALG_BACKEND: 'einsum'
           - BACKEND: 'jax'
             python-version: '3.13'
-            TENSORLY_TENALG_BACKEND: ['einsum']
+            TENSORLY_TENALG_BACKEND: 'einsum'
           - BACKEND: 'tensorflow'
             python-version: '3.12'
-            TENSORLY_TENALG_BACKEND: ['einsum']
+            TENSORLY_TENALG_BACKEND: 'einsum'
 
     steps:
     - uses: actions/checkout@v4
@@ -64,7 +64,7 @@ jobs:
 
     - name: Test with backend ${{matrix.BACKEND}} pytest and coverage
       run: |
-        TENSORLY_BACKEND=${{matrix.BACKEND}} pytest -vv --cov tensorly --cov-report xml --durations=10 tensorly
+        TENSORLY_BACKEND=${{matrix.BACKEND}} TENSORLY_TENALG_BACKEND=${{matrix.TENSORLY_TENALG_BACKEND || 'core'}} pytest -vv --cov tensorly --cov-report xml --durations=10 tensorly
 
     - name: Check coverage with CodeCov
       uses: codecov/codecov-action@v4
