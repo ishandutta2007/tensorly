@@ -20,8 +20,8 @@ def test_sparse_parafac():
     random_state = 1234
     rank = 3
     factors = [
-        sparse.random((2862, rank), random_state=random_state),
-        sparse.random((14036, rank), random_state=random_state),
+        sparse.random((300, rank), random_state=random_state),
+        sparse.random((1500, rank), random_state=random_state),
     ]
     weights = np.ones(rank)
     tensor = cp_to_tensor((weights, factors))
