@@ -445,7 +445,8 @@ def maxvol(A):
         # If a row is 0, we delete it.
         if any(rows_norms == 0):
             zero_idx = tl.argmin(rows_norms, axis=0)
-            mask.pop(zero_idx)
+            mask.pop(tl.to_numpy(zero_idx))
+            mask = tl.tensor(mask, dtype=tl.int64)
             rest_of_rows = rest_of_rows[mask]
             A_new = A_new[mask, :]
             continue
@@ -464,11 +465,12 @@ def maxvol(A):
 
         # Delete the selected row
         mask.pop(tl.to_numpy(max_row_idx))
+        mask = tl.tensor(mask, dtype=tl.int64)
         A_new = A_new[mask, :]
 
         # update the row_idx and rest_of_rows
         row_idx = tl.index_update(row_idx, i, rest_of_rows[max_row_idx])
-        rest_of_rows = rest_of_rows[tl.tensor(mask, dtype=tl.int64)]
+        rest_of_rows = rest_of_rows[mask]
         i = i + 1
 
     row_idx = tl.tensor(row_idx, dtype=tl.int64)
