@@ -62,13 +62,19 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
             axis = None
 
         if order == "inf":
-            return np.max(np.abs(tensor), axis=axis)
-        if order == 1:
-            return np.sum(np.abs(tensor), axis=axis)
+            result = np.max(np.abs(tensor), axis=axis)
+        elif order == 1:
+            result = np.sum(np.abs(tensor), axis=axis)
         elif order == 2:
-            return np.sqrt(np.sum(tensor**2, axis=axis))
+            result = np.sqrt(np.sum(tensor**2, axis=axis))
         else:
-            return np.sum(np.abs(tensor) ** order, axis=axis) ** (1 / order)
+            result = np.sum(np.abs(tensor) ** order, axis=axis) ** (1 / order)
+
+        # Older sparse versions reduce to NumPy scalars, while newer versions
+        # return 0-dimensional COO arrays. Keep the backend result consistent.
+        if np.ndim(result) == 0 and not is_sparse(result):
+            return NumpySparseBackend.tensor(result)
+        return result
 
     def dot(self, x, y):
         if is_sparse(x) or is_sparse(y):
