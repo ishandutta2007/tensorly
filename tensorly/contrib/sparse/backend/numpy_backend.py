@@ -91,9 +91,11 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
         # just those before delegating, and leave zero-filled sparse operands
         # untouched to avoid blowing up memory.
         operands = [
-            operand.todense()
-            if is_sparse(operand) and operand.fill_value != 0
-            else operand
+            (
+                operand.todense()
+                if is_sparse(operand) and operand.fill_value != 0
+                else operand
+            )
             for operand in operands
         ]
         return sparse.einsum(subscripts, *operands)
