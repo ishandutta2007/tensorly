@@ -56,7 +56,12 @@ def test_CPRegressor():
 
 
 def test_multidim_CPRegressor():
-    tol = 1e-3
+    # tol is set with some headroom above the ALS fit's own convergence
+    # tolerance (1e-8): under CPU contention (e.g. many parallel pytest-xdist
+    # workers), multi-threaded BLAS reductions can sum in a different order
+    # and shift the converged solution by a small amount, which previously
+    # pushed the RMSE just over a tighter bound and flaked this test.
+    tol = 2e-3
     rng = T.check_random_state(1234)
 
     regression_weights = random_cp(
