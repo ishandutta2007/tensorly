@@ -67,6 +67,10 @@ class JaxBackend(Backend, backend_name="jax"):
     def index_update(tensor, indices, values):
         return tensor.at[indices].set(values)
 
+    @staticmethod
+    def clip(tensor, a_min=None, a_max=None):
+        return np.clip(tensor, a_min, a_max)
+
 
 for name in (
     backend_types
@@ -90,7 +94,6 @@ for name in (
         "sign",
         "conj",
         "diag",
-        "clip",
         "log2",
         "tensordot",
         "argsort",
