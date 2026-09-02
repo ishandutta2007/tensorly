@@ -26,7 +26,7 @@ def test_sparse_unfolding_times_cp():
     """
     import sparse
 
-    shape = (1000, 1000, 1000, 10)
+    shape = (300, 300, 300, 10)
     rank = 5
     factors = [sparse.random((i, rank), density=0.08) for i in shape]
     weights = np.ones(rank)

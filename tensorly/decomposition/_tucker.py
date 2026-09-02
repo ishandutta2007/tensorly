@@ -625,12 +625,18 @@ def non_negative_tucker_hals(
             )
             UtM = tl.transpose(MtU)
 
-            # Call the hals resolution with nnls, optimizing the current mode
+            # Call the hals resolution with nnls, optimizing the current mode.
+            # A handful of inner sweeps is enough: each outer iteration
+            # re-linearizes the subproblem anyway, so driving this inner solve
+            # to its own tight convergence is wasted work. This matters most on
+            # backends with high per-op dispatch overhead (jax, tensorflow),
+            # where hals_nnls's sequential row-wise index_update calls make a
+            # large n_iter_max extremely costly.
             nn_factor = hals_nnls(
                 UtM,
                 UtU,
                 tl.transpose(nn_factors[mode]),
-                n_iter_max=100,
+                n_iter_max=5,
                 sparsity_coefficient=sparsity_coefficients[mode],
                 exact=exact,
             )

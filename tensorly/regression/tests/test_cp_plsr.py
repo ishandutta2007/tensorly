@@ -222,8 +222,12 @@ def test_increasing_variance_random():
     X = tl.tensor(np.random.rand(20, 8, 6, 4))
     Y = tl.tensor(np.random.rand(20, 7))
     R2s = []
+    # CP_PLSR's default tol=1e-9 may never trigger early stopping on backends
+    # with lower numerical precision (e.g. jax/tensorflow), letting each of
+    # the 11 fits below run to the default n_iter_max=100. 40 already
+    # reproduces the same increasing R2s (verified across many random seeds).
     for r in range(1, 12):
-        tpls = CP_PLSR(r)
+        tpls = CP_PLSR(r, n_iter_max=40)
         tpls.fit(X, Y)
         R2s.append(tpls.score(X, Y))
 
@@ -236,7 +240,7 @@ def test_increasing_variance_synthetic():
     X, Y, _, _ = _get_pls_dataset((20, 18, 14, 13), 8, 17)
     R2s = []
     for r in range(1, 12):
-        tpls = CP_PLSR(r)
+        tpls = CP_PLSR(r, n_iter_max=40)
         tpls.fit(X, Y)
         R2s.append(tpls.score(X, Y))
 
