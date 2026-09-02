@@ -1,5 +1,4 @@
-"""Sparse-specific tests for the :mod:`tensorly.tenalg` module.
-"""
+"""Sparse-specific tests for the :mod:`tensorly.tenalg` module."""
 
 from .... import backend as tl
 
@@ -11,9 +10,11 @@ if not tl.get_backend() == "numpy":
 pytest.importorskip("sparse")
 
 import tensorly.contrib.sparse as stl
+from tensorly.contrib.sparse.backend import sparse_context
 from tensorly.contrib.sparse.cp_tensor import (
     unfolding_dot_khatri_rao as sparse_unfolding_dot_khatri_rao,
 )
+from tensorly.tenalg.svd import truncated_svd
 
 
 def test_sparse_unfolding_times_cp():
@@ -34,3 +35,23 @@ def test_sparse_unfolding_times_cp():
     for mode in range(tl.ndim(tensor)):
         # Will blow-up memory if not sparse-safe
         _ = sparse_unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
+
+
+@pytest.mark.parametrize("shape", [(4, 30), (30, 4)])
+def test_sparse_truncated_svd_with_rank_deficient_matrix(shape):
+    """Test that the sparse backend provides a finite reduced SVD."""
+    import sparse
+
+    matrix = sparse.COO.from_numpy(np.ones(shape))
+
+    with sparse_context():
+        U, S, V = truncated_svd(matrix, n_eigenvecs=min(matrix.shape))
+
+    U = U.todense() if hasattr(U, "todense") else np.asarray(U)
+    V = V.todense() if hasattr(V, "todense") else np.asarray(V)
+    assert np.isfinite(U).all()
+    assert np.isfinite(S).all()
+    assert np.isfinite(V).all()
+    np.testing.assert_allclose(U @ (S[:, None] * V), matrix.todense(), atol=1e-6)
+    np.testing.assert_allclose(U.T @ U, np.eye(U.shape[1]), atol=1e-6)
+    np.testing.assert_allclose(V @ V.T, np.eye(V.shape[0]), atol=1e-6)
