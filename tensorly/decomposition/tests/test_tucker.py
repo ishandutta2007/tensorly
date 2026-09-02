@@ -189,7 +189,11 @@ def test_non_negative_tucker(init, hals, monkeypatch):
     else:
         nn_method = non_negative_tucker
 
-    nn_core, nn_factors = nn_method(tensor, rank=[3, 4, 3], init=init, n_iter_max=100)
+    # This outer tol may never trigger early stopping on backends with lower
+    # numerical precision (e.g. jax/tensorflow), letting this run to
+    # n_iter_max regardless. 40 already reaches well within tol_norm_2/
+    # tol_max_abs below for both the hals and multiplicative-update variants.
+    nn_core, nn_factors = nn_method(tensor, rank=[3, 4, 3], init=init, n_iter_max=40)
 
     # Make sure all components are positive
     for factor in nn_factors:

@@ -538,11 +538,16 @@ def test_parafac2_em(linesearch):
 
     # apply parafac2
 
+    # 100 already reaches >0.9999 congruence on both factors (verified against
+    # the >0.98 assertions below) on backends that early-stop; on backends
+    # with lower numerical precision (e.g. jax/tensorflow) that never trigger
+    # the default tol and always run to n_iter_max, 1000 was 10x more than
+    # needed.
     rec = parafac2(
         slices,
         rank,
         random_state=rng,
-        n_iter_max=1000,
+        n_iter_max=100,
         linesearch=linesearch,
         mask=slices_masks,
     )
