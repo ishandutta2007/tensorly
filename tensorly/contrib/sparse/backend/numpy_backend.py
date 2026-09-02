@@ -76,6 +76,23 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
             return sparse.dot(x, y)
         return np.dot(x, y)
 
+    @staticmethod
+    def einsum(subscripts, *operands):
+        # `sparse.einsum` requires all its SparseArray operands to have a
+        # zero fill value (it can't do the einsum on the implicit fill
+        # values), but e.g. `tl.ones(...)` produces a COO array with fill
+        # value 1 and no stored entries. Such operands aren't meaningfully
+        # sparse anyway (they hold no explicit zeros to exploit), so densify
+        # just those before delegating, and leave zero-filled sparse operands
+        # untouched to avoid blowing up memory.
+        operands = [
+            operand.todense()
+            if is_sparse(operand) and operand.fill_value != 0
+            else operand
+            for operand in operands
+        ]
+        return sparse.einsum(subscripts, *operands)
+
     def solve(self, A, b):
         """
         Compute x s.t. Ax = b
